@@ -50,7 +50,7 @@ namespace GitSharpApi
             return response.ResultText;
         }
 
-        public async Task<IEnumerable<Commit>> GetCommits(int limit = 1000)
+        public async Task<IEnumerable<Commit>> GetCommitsAsync(int limit = 1000)
         {
             var args = $"log -{limit} --pretty=format:\"%H,%an,%ad,%s\" --date=iso-strict";
             var response = await _gitProcess.ExecuteCommandAsync(args);

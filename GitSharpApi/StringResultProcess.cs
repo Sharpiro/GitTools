@@ -7,7 +7,7 @@ namespace GitSharpApi
     public class StringResultProcess
     {
         protected string FileName { get; set; }
-        public string WorkingDirectory { get; protected set; }
+        public string WorkingDirectory { get; set; }
 
         public StringResultProcess(string fileName, string workingDirectory = "")
         {

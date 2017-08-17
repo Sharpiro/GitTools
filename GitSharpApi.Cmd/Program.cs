@@ -10,7 +10,7 @@ namespace GitSharpApi.Cmd
             const string workingDir = "C:\\Users\\U403598\\Desktop\\temp\\tempgit\\inner";
             var gitApi = new GitApi(new GitProcess(workingDir));
 
-            var data = gitApi.GetCommits().Result;
+            var data = gitApi.GetCommitsAsync().Result;
             //WriteLine(string.Join("\r\n", data));
             //foreach (var varx in data)
             //{
