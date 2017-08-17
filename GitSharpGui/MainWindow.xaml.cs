@@ -33,6 +33,7 @@ namespace GitSharpGui
         {
             try
             {
+                IsEnabled = false;
                 //using (var folderDialog = new FolderBrowserDialog())
                 //{
                 //    var dialogResult = folderDialog.ShowDialog();
@@ -54,6 +55,10 @@ namespace GitSharpGui
             catch (Exception ex)
             {
                 _messageBox.ShowError(ex);
+            }
+            finally
+            {
+                IsEnabled = true;
             }
         }
 
