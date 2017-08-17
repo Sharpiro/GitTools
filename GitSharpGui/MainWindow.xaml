@@ -1,0 +1,35 @@
+﻿<Window x:Class="GitSharpGui.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GitSharpGui"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="500" Width="800" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <StackPanel Margin="15">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Width="375">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Repo: " Width="55"/>
+                        <TextBox Name="RepoTextBox" Text="{Binding RepoPath, UpdateSourceTrigger=PropertyChanged}" Width="245" TextChanged="RepoTextBox_TextChanged"/>
+                        <!--<Button Content="Browse" Width="60" Margin="15,0,0,0"/>-->
+                    </StackPanel>
+                    <StackPanel Margin="0,15,0,0">
+                        <DataGrid ItemsSource="{Binding CommitsDataView}" SelectionUnit="Cell" Height="400" CurrentCellChanged="DataGrid_CurrentCellChanged"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Margin="15,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Hash:" Width="55"/>
+                        <TextBox Name="HashTextBox" Text="{Binding CurrentHash, UpdateSourceTrigger=PropertyChanged}" Width="225" TextChanged="HashTextBox_TextChanged"/>
+                        <!--<Button Content="Go" Width="60" Margin="15,0,0,0"/>-->
+                    </StackPanel>
+                    <StackPanel Margin="0,15,0,0">
+                        <TextBox Text="{Binding OutputText}" Width="350" Height="400"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
