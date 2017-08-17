@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GitSharpApi
@@ -15,7 +16,7 @@ namespace GitSharpApi
             WorkingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
         }
 
-        public Task<(int ExitCode, string ResultText)> ExecuteCommandAsync(string args)
+        public Task<(int ExitCode, string ResultText)> ExecuteCommandAsync(string args, int timeoutSeconds = 10)
         {
             return Task.Run(() =>
             {
@@ -33,8 +34,11 @@ namespace GitSharpApi
                 }
                 };
                 process.Start();
-                process.WaitForExit();
-                var resultText = process.ExitCode == 0 ? process.StandardOutput.ReadToEnd() : process.StandardError.ReadToEnd();
+                var outputText = process.StandardOutput.ReadToEnd();
+                var errorText = process.StandardOutput.ReadToEnd();
+                var exitSuccess = process.WaitForExit(timeoutSeconds * 1000);
+                if (!exitSuccess) throw new InvalidOperationException($"The process failed to return within {timeoutSeconds} seconds");
+                var resultText = outputText + errorText;
                 return (process.ExitCode, resultText);
             });
         }
