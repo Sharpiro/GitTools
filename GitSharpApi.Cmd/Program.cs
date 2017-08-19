@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using GitSharp;
+using GitSharp.Tools;
+using System;
 using static System.Console;
 
 namespace GitSharpApi.Cmd
@@ -7,31 +9,26 @@ namespace GitSharpApi.Cmd
     {
         private static void Main(string[] args)
         {
-            const string workingDir = "C:\\Users\\U403598\\Desktop\\temp\\tempgit\\inner";
-            var gitApi = new GitApi(new GitProcess(workingDir));
-
-            var data = gitApi.GetCommitsAsync().Result;
-            //WriteLine(string.Join("\r\n", data));
-            //foreach (var varx in data)
-            //{
-            //    WriteLine(varx);
-            //    var data2 = gitApi.CatFileAsync(varx).Result;
-            //    WriteLine(data2);
-            //}
-
-            WriteLine("Press any key to exit...");
-            ReadKey();
+            var logger = new ConsoleLogger();
+            try
+            {
+                const string workingDir = @"C:\Users\sharpiro\Desktop\temp\tempgitsharp";
+                var execution = new GitSharpExecution(workingDir, logger, new Sha1Hasher());
+                var formatter = new ExecutionFormatter(execution);
+                if (!execution.IsGitRepo())
+                    execution.Init();
+                var output = formatter.Status();
+                logger.Info(output);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex);
+            }
+            finally
+            {
+                logger.Debug("Press any key to exit...");
+                ReadKey();
+            }
         }
-
-        //private static async Task ExecuteProcessAndPrint(StringResultProcess process, string args, int order)
-        //{
-        //    //for (var i = 0; i < 200; i++)
-        //    //{
-        //    //    WriteLine($"Started process {i + 1}: ");
-        //    //    var _ = ExecuteProcessAndPrint(process, argsx, i + 1);
-        //    //}
-        //    var data = await process.ExecuteCommandAsync(args);
-        //    WriteLine($"{order}: {data.ExitCode}");
-        //}
     }
 }

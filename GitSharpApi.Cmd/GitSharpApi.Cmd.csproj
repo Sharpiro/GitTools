@@ -58,6 +58,10 @@
       <Project>{da76b937-dce1-4ac5-b807-dd539dbc5461}</Project>
       <Name>GitSharpApi</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GitSharp\GitSharp.csproj">
+      <Project>{0e877b06-4700-4a5c-810b-14f8bda5fcad}</Project>
+      <Name>GitSharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
