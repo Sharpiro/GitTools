@@ -2,7 +2,7 @@
 
 namespace GitSharp
 {
-    public class Sha1Hasher
+    public class Sha1Hasher : IHasher
     {
         public byte[] CreateHash(byte[] inputBytes)
         {

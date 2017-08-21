@@ -26,7 +26,7 @@ namespace GitSharp.Tools
             ForegroundColor = ConsoleColor.Gray;
         }
 
-        public void Info(string message)
+        public void Info(string message, ConsoleColor foregroundColor = ConsoleColor.DarkGreen)
         {
             ForegroundColor = ConsoleColor.DarkGreen;
             WriteLine(message);
