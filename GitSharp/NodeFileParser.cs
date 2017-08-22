@@ -5,11 +5,11 @@ using System.Linq;
 
 namespace GitSharp
 {
-    public class NodeParser
+    public class NodeFileParser
     {
         private readonly string _kitObjectsPath;
 
-        public NodeParser(string kitRoot)
+        public NodeFileParser(string kitRoot)
         {
             _kitObjectsPath = $"{kitRoot}\\.gitsharp\\objects";
         }

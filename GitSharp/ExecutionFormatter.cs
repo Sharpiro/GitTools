@@ -18,8 +18,12 @@ namespace GitSharp
         public void Status()
         {
             var status = _gitSharpExecution.Status();
-            var output = string.Join(Environment.NewLine, status.Select(i => $"\t{i.FileInfo.Name}"));
             _logger.Info("Status");
+            string output;
+            if (!status.Any())
+                output = "No deltas";
+            else
+                output = string.Join(Environment.NewLine, status.Select(i => $"\t{i.Node.RelativePath}({i.DeltaType})"));
             _logger.Info(output);
         }
 
@@ -29,9 +33,9 @@ namespace GitSharp
             _logger.Info("Commit");
             string output;
             if (!status.Any())
-                output = "No data to commit";
+                output = "No deltas";
             else
-                output = string.Join(Environment.NewLine, status.Select(i => $"\t{i.FileInfo.Name}"));
+                output = string.Join(Environment.NewLine, status.Select(i => $"\t{i.Node.RelativePath}({i.DeltaType})"));
             _logger.Info(output);
         }
     }

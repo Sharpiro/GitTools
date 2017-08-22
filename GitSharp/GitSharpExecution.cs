@@ -5,21 +5,22 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GitSharp
 {
-    public class GitSharpExecution
+    public class GitSharpExecution : ISourceControlApi
     {
         private readonly string _kitRoot;
         private readonly ILogger _logger;
         private readonly IHasher _hasher;
-        private readonly NodeParser _nodeParser;
+        private readonly NodeFileParser _nodeParser;
         private readonly string _kitDataPath;
         private readonly string _kitObjectsPath;
         private readonly string _kitHeadsPath;
 
         private GitSharpExecution(string kitRoot, ILogger logger, IHasher hasher,
-            NodeParser nodeParser)
+            NodeFileParser nodeParser)
         {
             _kitRoot = kitRoot ?? throw new ArgumentNullException(nameof(kitRoot));
             _kitDataPath = $"{_kitRoot}\\.gitsharp";
@@ -43,18 +44,7 @@ namespace GitSharp
             _logger.Info($"GitSharp data path created @ '{_kitDataPath}'");
         }
 
-        public IEnumerable<(FileInfo FileInfo, string Hash)> Status()
-        {
-            ValidateIsKitRepo();
-
-            var allFileData = GetAllFiles();
-            var allKitObjects = GetKitObjects();
-            var newHashes = allFileData.Where(h => !allKitObjects.Select(o => o.Hash).Contains(h.Hash));
-
-            return newHashes;
-        }
-
-        public IEnumerable<(FileInfo FileInfo, string Hash)> Commit()
+        public List<KitDelta> Status()
         {
             ValidateIsKitRepo();
 
@@ -66,7 +56,24 @@ namespace GitSharp
                 RelativePath = _kitRoot.GetRelativePath(_kitRoot)
             };
 
-            BuildTree(new DirectoryInfo(_kitRoot), newTreeRoot);
+            var deltas = GetCommitDeltas(headCommitId, newTreeRoot);
+
+            return deltas;
+        }
+
+        public List<KitDelta> Commit()
+        {
+            ValidateIsKitRepo();
+
+            var headCommitId = GetMostRecentCommitId();
+
+            var newTreeRoot = new TreeNode
+            {
+                Type = NodeType.Tree,
+                RelativePath = _kitRoot.GetRelativePath(_kitRoot)
+            };
+
+            var deltas = GetCommitDeltas(headCommitId, newTreeRoot);
 
             var newCommit = new CommitNode
             {
@@ -78,13 +85,8 @@ namespace GitSharp
                 AuthorDate = DateTime.UtcNow,
                 Hash = newTreeRoot.Hash.GetHash(_hasher)
             };
-            //var data = $"{commit.Author}\t{commit.Message}\t{commit.TreeNodeRoot.Hash}";
 
-            if (newCommit.Hash.Equals(headCommitId, StringComparison.InvariantCultureIgnoreCase))
-                return Enumerable.Empty<(FileInfo FileInfo, string Hash)>();
-
-            var headCommit = GetCommitNode(headCommitId);
-
+            ////write new objects
             newCommit.Traverse(currentNode =>
             {
                 var filePath = $"{_kitObjectsPath}\\{currentNode.Hash}";
@@ -94,34 +96,65 @@ namespace GitSharp
                 }
             });
 
-            //WriteTreeObjects(commit);
-
+            //write branch head commit
             File.WriteAllText($"{_kitHeadsPath}\\master", newCommit.Hash);
 
-            return Enumerable.Empty<(FileInfo FileInfo, string Hash)>();
+            return deltas;
         }
 
-        //private void Traverse(Node currentNode, Action<Node> action)
-        //{
-        //    action(currentNode);
-        //    var childNodes = currentNode.GetChildNodes();
-        //    foreach (var childNode in childNodes)
-        //    {
-        //        Traverse(childNode, action);
-        //    }
-        //}
+        private List<KitDelta> GetCommitDeltas(string headCommitId, TreeNode newTreeRoot)
+        {
+            BuildTree(new DirectoryInfo(_kitRoot), newTreeRoot);
 
-        //private void WriteTreeObjects(Node currentNode)
-        //{
-        //    var filePath = $"{_kitObjectsPath}\\{currentNode.Hash}";
-        //    if (!File.Exists(filePath))
-        //        File.WriteAllBytes(filePath, new byte[0]);
-        //    var childNodes = currentNode.GetChildNodes();
-        //    foreach (var childNode in childNodes)
-        //    {
-        //        WriteTreeObjects(childNode);
-        //    }
-        //}
+            var newHash = newTreeRoot.Hash.GetHash(_hasher);
+            var deltas = new List<KitDelta>();
+
+            if (newHash.Equals(headCommitId, StringComparison.InvariantCultureIgnoreCase))
+                return deltas;
+
+            var headCommit = _nodeParser.ParseCommitNode(headCommitId);
+
+            GetNodeDiff(headCommit.TreeNodeRoot, newTreeRoot, deltas);
+
+            return deltas;
+        }
+
+        private void GetNodeDiff(PathNode oldNode, PathNode newNode, List<KitDelta> deltas)
+        {
+            if (oldNode == null)
+            {
+                throw new InvalidOperationException($"Old node was null, this should never occur. Path: {oldNode.RelativePath}");
+            }
+            if (newNode == null)
+            {
+                deltas.Add(new KitDelta { Node = oldNode, DeltaType = DeltaType.Delete });
+                return;
+            }
+            if (oldNode.Hash == newNode.Hash) return;
+            if (oldNode.Type == NodeType.Blob && newNode.Type != NodeType.Blob)
+                throw new Exception($"Type mismatch for old node type: '{oldNode.Type}' and new node type: '{newNode.Type}' for old node path: '{oldNode.RelativePath}' and new node path: '{newNode.RelativePath}'");
+
+            if (oldNode.Type == NodeType.Blob && newNode.Type == NodeType.Blob)
+            {
+                deltas.Add(new KitDelta { Node = newNode, DeltaType = DeltaType.Edit });
+                return;
+            }
+
+            var oldChildNodes = oldNode.GetChildNodes().Select(n => n as PathNode);
+            var newChildNodes = newNode.GetChildNodes().Select(n => n as PathNode);
+
+            var oldDictionary = oldChildNodes.ToDictionary(n => n.RelativePath, n => n);
+            var newDictionary = newChildNodes.ToDictionary(n => n.RelativePath, n => n);
+            foreach (var oldKvp in oldDictionary)
+            {
+                var thisNode = oldKvp.Value;
+                var nodeExists = newDictionary.TryGetValue(oldKvp.Key, out PathNode otherNode);
+                GetNodeDiff(thisNode, otherNode, deltas);
+                newDictionary.Remove(oldKvp.Key);
+            }
+
+            deltas.AddRange(newDictionary.Select(kvp => new KitDelta { Node = kvp.Value, DeltaType = DeltaType.Add }));
+        }
 
         private string GetMostRecentCommitId()
         {
@@ -164,13 +197,6 @@ namespace GitSharp
             currentTreeNode.Hash = parentHash;
         }
 
-        private CommitNode GetCommitNode(string hash)
-        {
-            //var objectData = GetKitObject(hash);
-            var temp = _nodeParser.ParseCommitNode(hash);
-            throw new NotImplementedException();
-        }
-
         //private string GetKitObject(string hash)
         //{
         //    var path = $"{_kitObjectsPath}\\{hash}";
@@ -196,32 +222,42 @@ namespace GitSharp
             _logger.Debug($"GitSharp data path exists @ '{_kitDataPath}'");
         }
 
-        private IEnumerable<(FileInfo fileInfo, string Hash)> GetKitObjects()
+        //private IEnumerable<(FileInfo fileInfo, string Hash)> GetKitObjects()
+        //{
+        //    var objectsDirectory = new DirectoryInfo($"{_kitDataPath}\\objects");
+        //    var objectFiles = objectsDirectory.GetFiles();
+        //    return objectFiles.Select(f =>
+        //    {
+        //        return (f, f.Name.Substring(0, f.Name.Length - f.Extension.Length));
+        //    });
+        //}
+
+        //private IEnumerable<(FileInfo fileInfo, string Hash)> GetAllFiles()
+        //{
+
+        //    var directoryInfo = new DirectoryInfo(_kitRoot);
+        //    var files = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories)
+        //        .Where(f => !f.FullName.Contains(".gitsharp"));
+        //    return files.Select(f =>
+        //    {
+        //        var fileBytes = File.ReadAllBytes(f.FullName);
+        //        var hashedBytes = _hasher.CreateHash(fileBytes);
+        //        var hashedHex = string.Join(string.Empty, hashedBytes.Select(b => b.ToString("X2"))).ToLower();
+        //        return (FileInfo: f, Hash: hashedHex);
+        //    });
+        //}
+
+        public Task<string> CatFileAsync(string hash)
         {
-            var objectsDirectory = new DirectoryInfo($"{_kitDataPath}\\objects");
-            var objectFiles = objectsDirectory.GetFiles();
-            return objectFiles.Select(f =>
+            return Task.Run(() =>
             {
-                return (f, f.Name.Substring(0, f.Name.Length - f.Extension.Length));
+                var path = $"{_kitObjectsPath}\\{hash}";
+                if (!File.Exists(path)) throw new FileNotFoundException($"Unable to find file @ '{path}");
+                return File.ReadAllText(path);
             });
         }
 
-        private IEnumerable<(FileInfo fileInfo, string Hash)> GetAllFiles()
-        {
-
-            var directoryInfo = new DirectoryInfo(_kitRoot);
-            var files = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories)
-                .Where(f => !f.FullName.Contains(".gitsharp"));
-            return files.Select(f =>
-            {
-                var fileBytes = File.ReadAllBytes(f.FullName);
-                var hashedBytes = _hasher.CreateHash(fileBytes);
-                var hashedHex = string.Join(string.Empty, hashedBytes.Select(b => b.ToString("X2"))).ToLower();
-                return (FileInfo: f, Hash: hashedHex);
-            });
-        }
-
-        public static GitSharpExecution Create(string kitRoot, ILogger logger, Sha1Hasher hasher, NodeParser nodeParser)
+        public static GitSharpExecution Create(string kitRoot, ILogger logger, Sha1Hasher hasher, NodeFileParser nodeParser)
         {
             if (!Directory.Exists(kitRoot)) throw new DirectoryNotFoundException($"Root directory not found or invalid @ '{kitRoot}'");
             return new GitSharpExecution(kitRoot, logger, hasher, nodeParser);

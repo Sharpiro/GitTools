@@ -1,4 +1,5 @@
 ﻿using GitSharpApi;
+using GitSharpApi.Models;
 using GitSharpGui.Tools;
 using GitSharpGui.ViewModels;
 using Microsoft.Win32;
@@ -45,7 +46,7 @@ namespace GitSharpGui
                 //_viewModel.RepoPath = folderDialog.SelectedPath;
                 if (!Directory.Exists(_viewModel.RepoPath))
                 {
-                    _viewModel.Commits = new List<GitSharpApi.Models.Commit>();
+                    _viewModel.Commits = new List<Commit>();
                     return;
                 }
                 //_messageBox.ShowInfo($"Repo Path: '{_viewModel.RepoPath}'");

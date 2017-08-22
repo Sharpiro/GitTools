@@ -9,7 +9,8 @@ namespace GitSharp.Models
     {
         public List<PathNode> Children { get; set; } = new List<PathNode>();
 
-        public override ImmutableList<Node> GetChildNodes() => Children.Select(c => c as Node).ToImmutableList();
+        public override ImmutableList<Node> GetChildNodes() =>
+            Children.OrderBy(n => n.RelativePath).Select(c => c as Node).ToImmutableList();
 
         public override string GetWriteableData()
         {
