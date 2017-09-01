@@ -5,24 +5,24 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GitSharpGui"
         mc:Ignorable="d"
-        Title="MainWindow" Height="800" Width="1200" WindowStartupLocation="CenterScreen">
+        Title="MainWindow" Height="800" Width="1200" WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize" Icon="/Content/gwindows_logo.png">
     <Grid>
         <StackPanel Margin="15">
             <StackPanel Orientation="Horizontal">
                 <StackPanel Width="575">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Repo: " Width="55"/>
-                        <TextBox Name="RepoTextBox" Text="{Binding RepoPath, UpdateSourceTrigger=PropertyChanged}" Width="245" TextChanged="RepoTextBox_TextChanged"/>
+                        <TextBlock Text="Repo: " Width="60"/>
+                        <TextBox Name="RepoTextBox" Text="{Binding RepoPath, UpdateSourceTrigger=PropertyChanged}" Width="515" TextChanged="RepoTextBox_TextChanged"/>
                         <!--<Button Content="Browse" Width="60" Margin="15,0,0,0"/>-->
                     </StackPanel>
                     <StackPanel Margin="0,15,0,0">
-                        <DataGrid ItemsSource="{Binding CommitsDataView}" SelectionUnit="Cell" Height="695" CurrentCellChanged="DataGrid_CurrentCellChanged"/>
+                        <DataGrid ItemsSource="{Binding CommitsDataView}" SelectionUnit="Cell" Height="695" CurrentCellChanged="DataGrid_CurrentCellChanged" IsReadOnly="True"/>
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Margin="15,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Hash:" Width="55"/>
-                        <TextBox Name="HashTextBox" Text="{Binding CurrentHash, UpdateSourceTrigger=PropertyChanged}" Width="225" TextChanged="HashTextBox_TextChanged"/>
+                        <TextBox Name="HashTextBox" Text="{Binding CurrentHash, UpdateSourceTrigger=PropertyChanged}" Width="285" TextChanged="HashTextBox_TextChanged"/>
                         <!--<Button Content="Go" Width="60" Margin="15,0,0,0"/>-->
                     </StackPanel>
                     <StackPanel Margin="0,15,0,0">
